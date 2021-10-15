@@ -2,3 +2,4 @@
 dump.py
 /adapter/log.py
 /venv/
+__pycache__
