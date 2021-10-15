@@ -3,3 +3,9 @@ dump.py
 /adapter/log.py
 /venv/
 __pycache__
+adapter/__pycache__/strategy.cpython-37.pyc
+test_smbad.py
+adapter/__pycache__/strategy.cpython-37.pyc
+/test/
+test_smbad.py
+test_imap.py
