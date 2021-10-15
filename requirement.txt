@@ -1,0 +1,14 @@
+cryptography
+filelock
+idna
+#paramiko
+pyasn1
+pyasn1-modules
+pycparser
+PyNaCl
+python-ldap
+requests
+requests-file
+six
+tldextract
+urllib3
