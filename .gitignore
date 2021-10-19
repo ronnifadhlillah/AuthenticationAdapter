@@ -3,3 +3,5 @@ dump.py
 /adapter/log.py
 /venv/
 __pycache__
+test.py
+requirement.txt
