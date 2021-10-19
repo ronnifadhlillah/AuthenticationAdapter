@@ -46,49 +46,36 @@ class Strategy:
         bj=',DC='.join(dn)
         base_dn=str('DC='+bj)
         addr=socket.gethostbyname(dc[0].upper())
-        # # gak attr=['memberOf'] --> For testing the AD
         l=ldap.initialize('ldap://%s' % addr)
         l.protocol_version=ldap.VERSION3
         l.set_option(ldap.OPT_REFERRALS,389)
         try:
             l.simple_bind_s(username,self.ps)
-        #     # testing ldap connection --> For testing the AD
-            # auth=l.search_s(base_dn,ldap.SCOPE_SUBTREE,'(objectClasas=*)',attr) #--> For testing the AD
-            # for dn,entry in auth: #--> For testing the AD
-            #     print('Processing',repr(entry)) #--> For testing the AD
-            # return True
+            return True
         except ldap.INVALID_CREDENTIALS:
             return False
 
     def WinAD(self):
-        # Validation if using subdomain
-        # Depending of Server NetBIOS Name
-        dc=selfuri.split('.')
+        dc=self.uri.split('.')
+        username='%s@%s' % (self.un,'.'.join(dc[0:]))
         if tldextract.extract(self.uri).subdomain is not '':
-            username='%s@%s' % (self.un,'.'.join(dc[1:]))
-            dn=[]
-            for i in dc[1:]:
-                dn.append(str(i))
-        else:
-            username='%s@%s' % (self.un,'.'.join(dc[0:]))
             dn=[]
             for i in dc[0:]:
                 dn.append(str(i))
-        # Mastering DN
-        bj=',DC='.join(dn)
-        base_dn=str('DC='+bj)
-        print(dc)
-        addr=socket.gethostbyname(dc[0].upper())
-        # agak attr=['memberOf'] --> For testing the AD
+            bj=',DC='.join(dn)
+            base_dn=str('CN='+bj)
+        else:
+            dn=[]
+            for i in dc[0:]:
+                dn.append(str(i))
+            bj=',DC='.join(dn)
+            base_dn=str('DC='+bj)
+        addr=socket.gethostbyname(self.uri.upper())
         l=ldap.initialize('ldap://%s' % addr)
         l.protocol_version=ldap.VERSION3
         l.set_option(ldap.OPT_REFERRALS,self.prt)
         try:
             l.simple_bind_s(username,self.ps)
-            # testing ldap connection --> For testing the AD
-            # auth=l.search_s(base_dn,ldap.SCOPE_SUBTREE,'(objectClasas=*)',attr) --> For testing the AD
-            # for dn,entry in auth: --> For testing the AD
-            #     print('Processing',repr(entry)) --> For testing the AD
             return True
         except ldap.INVALID_CREDENTIALS:
             return False
@@ -104,6 +91,14 @@ class Strategy:
             if bool(pattern) == True:
                 return False
             # Port validation
-            port=[995,993,465,143,389]
+            port=[995,993,465,143,389,50000,50001]
             if self.prt not in port:
                 return False
+
+    def testCon():
+        # attr=['memberOf'] --> For testing the AD
+        # testing ldap connection --> For testing the AD
+        # auth=l.search_s(base_dn,ldap.SCOPE_SUBTREE,'(objectClasas=*)',attr) #--> For testing the AD
+        # for dn,entry in auth: #--> For testing the AD
+        #     print('Processing',repr(entry)) #--> For testing the AD
+        pass
