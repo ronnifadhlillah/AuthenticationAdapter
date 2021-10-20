@@ -13,6 +13,7 @@ class Strategy:
         self.un=un
         self.ps=ps
         self.prt=prt
+        self.dc=self.uri.split('.')
         if (Strategy.DomainValidate(self))==False:
             print('Something wrong with your parameter. Check it out')
             sys.exit()
@@ -45,40 +46,20 @@ class Strategy:
         # Mastering DN
         bj=',DC='.join(dn)
         base_dn=str('DC='+bj)
-        addr=socket.gethostbyname(dc[0].upper())
-        l=ldap.initialize('ldap://%s' % addr)
-        l.protocol_version=ldap.VERSION3
-        l.set_option(ldap.OPT_REFERRALS,389)
-        try:
-            l.simple_bind_s(username,self.ps)
-            return True
-        except ldap.INVALID_CREDENTIALS:
-            return False
+        return Strategy.doAuthentication(self,username,base_dn,dn)
 
     def WinAD(self):
-        dc=self.uri.split('.')
-        username='%s@%s' % (self.un,'.'.join(dc[0:]))
+        username='%s@%s' % (self.un,'.'.join(self.dc[0:]))
+        dn=[]
+        for i in self.dc[0:]:
+            dn.append(str(i))
         if tldextract.extract(self.uri).subdomain is not '':
-            dn=[]
-            for i in dc[0:]:
-                dn.append(str(i))
             bj=',DC='.join(dn)
             base_dn=str('CN='+bj)
         else:
-            dn=[]
-            for i in dc[0:]:
-                dn.append(str(i))
             bj=',DC='.join(dn)
             base_dn=str('DC='+bj)
-        addr=socket.gethostbyname(self.uri.upper())
-        l=ldap.initialize('ldap://%s' % addr)
-        l.protocol_version=ldap.VERSION3
-        l.set_option(ldap.OPT_REFERRALS,self.prt)
-        try:
-            l.simple_bind_s(username,self.ps)
-            return True
-        except ldap.INVALID_CREDENTIALS:
-            return False
+        return Strategy.doAuthentication(self,username,base_dn,dn)
 
     def DomainValidate(self):
             # Validation URI parameter
@@ -95,10 +76,19 @@ class Strategy:
             if self.prt not in port:
                 return False
 
-    def testCon():
-        # attr=['memberOf'] --> For testing the AD
-        # testing ldap connection --> For testing the AD
-        # auth=l.search_s(base_dn,ldap.SCOPE_SUBTREE,'(objectClasas=*)',attr) #--> For testing the AD
-        # for dn,entry in auth: #--> For testing the AD
-        #     print('Processing',repr(entry)) #--> For testing the AD
-        pass
+    def doAuthentication(self,username,base_dn,dn):
+        addr=socket.gethostbyname(self.uri.upper())
+        l=ldap.initialize('ldap://%s' % addr)
+        l.protocol_version=ldap.VERSION3
+        l.set_option(ldap.OPT_REFERRALS,self.prt)
+        try:
+            l.simple_bind_s(username,self.ps)
+            # LDAP testing below is currently running on linux (smb4DAD only)
+            # attr=['memberOf'] #--> For testing the AD
+            # # testing ldap connection --> For testing the AD
+            # auth=l.search_s(base_dn,ldap.SCOPE_SUBTREE,'(objectClass=*)',attr) #--> For testing the AD
+            # for dn,entry in auth: #--> For testing the AD
+            #     print('Processing',repr(entry)) #--> For testing the AD
+            return True
+        except ldap.INVALID_CREDENTIALS:
+            return False
