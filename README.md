@@ -1,7 +1,7 @@
 # AuthenticationAdapter
 #### Auth Strategy by advantage of IMAP User, AD.
 
-Simple authentication for integrating local server / AD user, IMAP account using LDAP Protocol.
+Simple authentication for integrating local server / AD user, IMAP account.
 
 Basic usage
 ```
