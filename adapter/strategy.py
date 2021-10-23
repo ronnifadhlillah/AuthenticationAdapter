@@ -19,9 +19,8 @@ class Strategy:
             sys.exit()
 
     def Imap(self):
-        dc=self.uri.split('.')
         if tldextract.extract(self.uri).subdomain is not '':
-            username='%s@%s'%(self.un,'.'.join(dc[1:]))
+            username='%s@%s'%(self.un,'.'.join(self.dc[1:]))
         try:
             imp=imaplib.IMAP4_SSL(self.uri,port=self.prt)
             imp.login(username,self.ps)
@@ -31,15 +30,13 @@ class Strategy:
         imp.close()
 
     def SmbAD(self):
-        # Depending of Server NetBIOS Name
-        dc=self.uri.split('.')
         if tldextract.extract(self.uri).subdomain is not '':
-            username='%s@%s' % (self.un,'.'.join(dc[1:]))
+            username='%s@%s' % (self.un,'.'.join(self.dc[1:]))
             dn=[]
             for i in dc[1:]:
                 dn.append(str(i))
         else:
-            username='%s@%s' % (un,'.'.join(dc[0:]))
+            username='%s@%s' % (self.un,'.'.join(self.dc[0:]))
             dn=[]
             for i in dc[0:]:
                 dn.append(str(i))
@@ -49,16 +46,22 @@ class Strategy:
         return Strategy.doAuthentication(self,username,base_dn,dn)
 
     def WinAD(self):
-        dn=[]
-        for i in self.dc[0:]:
-            dn.append(str(i))
+        username='%s@%s' % (self.un,'.'.join(self.dc[1:]))
+        dc=self.uri.split('.')
         if tldextract.extract(self.uri).subdomain is not '':
-            bj=',DC='.join(dn)
-            base_dn=str('DC='+bj)
+            username='%s@%s' % (self.un,'.'.join(dc[1:]))
+            dn=[]
+            for i in dc[1:]:
+                dn.append(str(i))
         else:
-            bj=',DC='.join(dn)
-            base_dn=str('DC='+bj)
-        return Strategy.doAuthentication(self,base_dn,dn)
+            username='%s@%s' % (self.un,'.'.join(dc[0:]))
+            dn=[]
+            for i in dc[0:]:
+                dn.append(str(i))
+        # Mastering DN
+        bj=',DC='.join(dn)
+        base_dn=str('DC='+bj)
+        return Strategy.doAuthentication(self,username,base_dn,dn)
 
     def DomainValidate(self):
             # Validation URI parameter
@@ -71,13 +74,13 @@ class Strategy:
             if bool(pattern) == True:
                 return False
 
-    def doAuthentication(self,base_dn,dn):
+    def doAuthentication(self,username,base_dn,dn):
         addr=socket.gethostbyname(self.uri.upper())
         l=ldap.initialize('ldap://%s' % addr)
         l.protocol_version=ldap.VERSION3
         l.set_option(ldap.OPT_REFERRALS,self.prt)
         try:
-            l.simple_bind_s(self.un,self.ps)
+            l.simple_bind_s(username,self.ps)
             # # LDAP testing below is currently running on linux (smb4DAD only)
             # attr=['Domain'] #--> For testing the AD
             # # # testing ldap connection --> For testing the AD

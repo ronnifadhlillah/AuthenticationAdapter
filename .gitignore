@@ -5,3 +5,4 @@ dump.py
 __pycache__
 test.py
 requirement.txt
+sample_config.conf
