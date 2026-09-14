@@ -1,3 +1,6 @@
+from ldap3 import Server, Connection, ALL, SIMPLE
+from ldap3.core.exceptions import LDAPException, LDAPBindError
+
 import adapter
 import ldap
 import imaplib
@@ -6,6 +9,8 @@ import socket
 import tldextract
 import sys
 import re
+
+
 
 class Strategy:
     def __init__(self,uri,un,ps,prt):
@@ -45,7 +50,7 @@ class Strategy:
         base_dn=str('DC='+bj)
         return Strategy.doAuthentication(self,username,base_dn,dn)
 
-    def WinAD(self):
+    def WinAD1(self):
         username='%s@%s' % (self.un,'.'.join(self.dc[1:]))
         dc=self.uri.split('.')
         if tldextract.extract(self.uri).subdomain is not '':
@@ -62,6 +67,39 @@ class Strategy:
         bj=',DC='.join(dn)
         base_dn=str('DC='+bj)
         return Strategy.doAuthentication(self,username,base_dn,dn)
+
+    def WinAD(domainUser, password, serverIpOrFqdn, domainSuffix):
+      # Active Directory accepts UPN format: username@domain.com
+      user_principal = f"{domainUser}@{domainSuffix}"
+    
+      try:
+        #  The server connection, Use get_info=ALL to pull server metadata if needed, but it's optional
+        server = Server(serverIpOrFqdn, get_info=ALL)
+        
+        # Create the connection object, We use check_names=True to validate attributes against the schema automatically
+        connection = Connection(
+            server, 
+            user=user_principal, 
+            password=password, 
+            authentication=SIMPLE,
+            raise_exceptions=True
+        )
+        
+        # Attempt to Bind (Log In)
+        connection.bind()
+        
+        # If no exception is raised, login is successful!
+        # Always clean up and close the connection
+        connection.unbind()
+        return True
+
+      except LDAPBindError as e:
+        # This catches bad passwords, locked accounts, or non-existent users
+        return False
+      except LDAPException as e:
+        # This catches network errors, bad server addresses, or timeout issues
+        return False
+
 
     def DomainValidate(self):
             # Validation URI parameter
