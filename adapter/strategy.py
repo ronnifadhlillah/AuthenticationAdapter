@@ -68,7 +68,7 @@ class Strategy:
         base_dn=str('DC='+bj)
         return Strategy.doAuthentication(self,username,base_dn,dn)
 
-    def WinAD(domainUser, password, serverIpOrFqdn, domainSuffix):
+    def WinAD2(domainUser, password, serverIpOrFqdn, domainSuffix):
       # Active Directory accepts UPN format: username@domain.com
       user_principal = f"{domainUser}@{domainSuffix}"
     
@@ -99,7 +99,6 @@ class Strategy:
       except LDAPException as e:
         # This catches network errors, bad server addresses, or timeout issues
         return False
-
 
     def DomainValidate(self):
             # Validation URI parameter
