@@ -18,20 +18,28 @@ class Strategy:
         self.ps=ps
         self.prt=prt
         self.dc=self.uri.split('.')
-        if (Strategy.DomainValidate(self))==False:
+        # OLD : if (Strategy.DomainValidate(self))==False:
+        if not self.DomainValidate():
             print('Something wrong with your parameter. Check it out')
             sys.exit()
 
     def Imap(self):
         if tldextract.extract(self.uri).subdomain is not '':
             username='%s@%s'%(self.un,'.'.join(self.dc[1:]))
+
+        imp=None
         try:
             imp=imaplib.IMAP4_SSL(self.uri,port=self.prt)
             imp.login(username,self.ps)
             return True
         except imaplib.IMAP4.error:
             return False
-        imp.close()
+        finally:
+          if imp:
+              try:
+                imp.logout()
+              except:
+                pass
 
     def SmbAD(self):
         if tldextract.extract(self.uri).subdomain is not '':
