@@ -1,6 +1,5 @@
 from ldap3 import Server, Connection, ALL, SIMPLE
 from ldap3.core.exceptions import LDAPException, LDAPBindError
-
 import adapter
 import ldap
 import imaplib
@@ -101,29 +100,46 @@ class Strategy:
         return False
 
     def DomainValidate(self):
-            # Validation URI parameter
-            # uri contain number
-            # Validation if input using IP as Domain Controller , it's not recommend
-            if self.uri.replace('.','').isnumeric() == True:
-                return False
-            # uri contain http://,https://,www.
-            pattern=re.match('((http|https)://)(www.)?[a-zA-Z0-9@:%._\\+~#?&//=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%._\\+~#?&//=]*)',self.uri)
-            if bool(pattern) == True:
-                return False
+      # Validation URI parameter
+      # uri contain number
+      # Validation if input using IP as Domain Controller , it's not recommend
+      if self.uri.replace('.','').isnumeric() == True:
+        return False
+      # uri contain http://,https://,www.
+      pattern=re.match('((http|https)://)(www.)?[a-zA-Z0-9@:%._\\+~#?&//=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%._\\+~#?&//=]*)',self.uri)
+      # OLD : if bool(pattern) == True:
+      #     return False
+      if pattern:
+        return False
+      return True
 
     def doAuthentication(self,username,base_dn,dn):
+      # OLD : addr=socket.gethostbyname(self.uri.upper())
+      # l=ldap.initialize('ldap://%s' % addr)
+      # l.protocol_version=ldap.VERSION3
+      # l.set_option(ldap.OPT_REFERRALS,self.prt)
+      # try:
+      #     l.simple_bind_s(username,self.ps)
+        # # LDAP testing below is currently running on linux (smb4DAD only)
+        # attr=['Domain'] #--> For testing the AD
+        # # # testing ldap connection --> For testing the AD
+        # auth=l.search_s(base_dn,ldap.SCOPE_SUBTREE,'(objectClass=*)',attr) #--> For testing the AD
+        # for dn,entry in auth: #--> For testing the AD
+        #     print('Processing',repr(entry)) #--> For testing the AD
+      #     return True
+      # except ldap.INVALID_CREDENTIALS:
+      #     return False
+      
+      try:
         addr=socket.gethostbyname(self.uri.upper())
-        l=ldap.initialize('ldap://%s' % addr)
+        l=ldap.initialize(f"""
+          ldap://{addr}
+        """)
         l.protocol_version=ldap.VERSION3
         l.set_option(ldap.OPT_REFERRALS,self.prt)
-        try:
-            l.simple_bind_s(username,self.ps)
-            # # LDAP testing below is currently running on linux (smb4DAD only)
-            # attr=['Domain'] #--> For testing the AD
-            # # # testing ldap connection --> For testing the AD
-            # auth=l.search_s(base_dn,ldap.SCOPE_SUBTREE,'(objectClass=*)',attr) #--> For testing the AD
-            # for dn,entry in auth: #--> For testing the AD
-            #     print('Processing',repr(entry)) #--> For testing the AD
-            return True
-        except ldap.INVALID_CREDENTIALS:
-            return False
+        l.simple_bind_s(username,self.ps)
+        return True
+      except ldap.INVALID_CREDENTIALS:
+        return False
+      except Exception:
+         return False
