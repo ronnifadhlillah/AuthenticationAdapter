@@ -1,5 +1,5 @@
-from ldap3 import Server, Connection, ALL, SIMPLE
-from ldap3.core.exceptions import LDAPException, LDAPBindError
+from ldap3 import Server, Connection, ALL, SIMPLE, NTLM, ALL_ATTRIBUTES, ALL_OPERATIONAL_ATTRIBUTES, AUTO_BIND_NO_TLS, SUBTREE
+from ldap3.core.exceptions import LDAPException,LDAPBindError,LDAPCursorError,LDAPAttributeError
 import adapter
 import ldap
 import imaplib
@@ -75,37 +75,47 @@ class Strategy:
         base_dn=str('DC='+bj)
         return Strategy.doAuthentication(self,username,base_dn,dn)
 
-    def WinAD2(domainUser, password, serverIpOrFqdn, domainSuffix):
-      # Active Directory accepts UPN format: username@domain.com
+    def winAd2(domainUser, password, serverIpOrFqdn, domainSuffix):
       user_principal = f"{domainUser}@{domainSuffix}"
-    
       try:
-        #  The server connection, Use get_info=ALL to pull server metadata if needed, but it's optional
         server = Server(serverIpOrFqdn, get_info=ALL)
-        
-        # Create the connection object, We use check_names=True to validate attributes against the schema automatically
         connection = Connection(
-            server, 
-            user=user_principal, 
-            password=password, 
-            authentication=SIMPLE,
-            raise_exceptions=True
+          server,
+          user='{}\\{}'.format(domainSuffix, domainUser),
+          password=password,
+          authentication=NTLM, # SIMPLE or NTLM
+          # raise_exceptions=True
+          auto_bind=True
         )
-        
-        # Attempt to Bind (Log In)
         connection.bind()
-        
-        # If no exception is raised, login is successful!
-        # Always clean up and close the connection
+
+        # Get list of active directory
+        connection.search(
+          search_base='dc={},dc=local'.format(domainSuffix),
+          search_filter='(objectclass=person)',
+          attributes=[ALL_ATTRIBUTES, ALL_OPERATIONAL_ATTRIBUTES]
+        )
+
+        print(connection.info)
+
+        sortedEntries=sorted(connection.entries,key=lambda e:e.entry_dn)
+
+        for c in sortedEntries:
+          try:
+            desc = c.description
+          except LDAPCursorError:
+            desc = ""
+      # print(str(c.name))
+      
         connection.unbind()
-        return True
+        return True, "success"
 
       except LDAPBindError as e:
-        # This catches bad passwords, locked accounts, or non-existent users
-        return False
+        error_msg=e
+        return False,error_msg
       except LDAPException as e:
-        # This catches network errors, bad server addresses, or timeout issues
-        return False
+        error_msg=e
+        return False, error_msg
 
     def DomainValidate(self):
       # Validation URI parameter
